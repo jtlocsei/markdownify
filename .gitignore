@@ -1,3 +1,6 @@
 .shadow-cljs/
 node_modules/
 public/compiledjs/
+/markdownify.iml
+/pom.xml
+/.idea/
