@@ -4,6 +4,19 @@
 
 
 
+(defonce flash-message (reagent/atom nil))
+(defonce flash-timeout (reagent/atom nil))
+
+(defn flash
+  ([text]
+   (flash text 3000))
+  ([text milliseconds]
+   (js/clearTimeout @flash-timeout)
+   (reset! flash-message text)
+   (reset! flash-timeout
+           (js/setTimeout #(reset! flash-message nil) milliseconds))))
+
+
 ; Example code from showdown npm library
 ; var showdown  = require('showdown'),
 ;    converter = new showdown.Converter(),
@@ -87,7 +100,26 @@
 
 (defn app
   []
-  [:<>
+  [:div {:style {:position :relative}}
+
+
+   [:div
+    {:style {:position :absolute
+             :margin :auto
+             :left 0
+             :right 0
+             :text-align :center
+             :max-width 200
+             :padding "2em"
+             :background-color "lightgreen"
+             :z-index 100
+             :border-radius 10
+             :transform (if @flash-message
+                          "scaleY(1)"
+                          "scaleY(0)")
+             :transition "transform 0.2s"}}
+    @flash-message]
+
    [:h1 "Markdownify"]
    [:div
     {:style {:display :flex}}
@@ -101,10 +133,12 @@
                                         :value (-> e .-target .-value)}))
        :value (->md @text-state)
        :style {:resize "none"
-               :height "500px"
+               :height "400px"
                :width "100%"}}]
      [:button
-      {:on-click #(copy-to-clipboard (->md @text-state))
+      {:on-click (fn []
+                   (copy-to-clipboard (->md @text-state))
+                   (flash "Markdown copied to clipboard"))
        :style {:background-color :green
                :padding "1em"
                :color :white
@@ -120,10 +154,12 @@
                                         :value (-> e .-target .-value)}))
        :value (->html @text-state)
        :style {:resize "none"
-               :height "500px"
+               :height "400px"
                :width "100%"}}]
      [:button
-      {:on-click #(copy-to-clipboard (->html @text-state))
+      {:on-click (fn []
+                   (copy-to-clipboard (->html @text-state))
+                   (flash "HTML copied to clipboard"))
        :style {:background-color :green
                :padding "1em"
                :color :white
@@ -134,7 +170,7 @@
      {:style {:flex "1"
               :padding-left "2em"}}
      [:h2 "HTML Preview"]
-     [:div {:style {:height "500px"}
+     [:div {:style {:height "400px"}
             :dangerouslySetInnerHTML {:__html (->html @text-state)}}]]]])
 
 
