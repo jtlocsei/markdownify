@@ -3,9 +3,6 @@
             ["showdown" :as showdown]))
 
 
-; Use defonce instead of def so that you can reload the code without clearing
-; the value of the atom.
-(defonce markdown (reagent/atom "Initial value"))
 
 ; Example code from showdown npm library
 ; var showdown  = require('showdown'),
@@ -21,6 +18,33 @@
 ; converter.makeHtml(text);
 (defn md->html [md]
   (.makeHtml showdown-converter md))
+
+(defn html->md [html]
+  (.makeMarkdown showdown-converter html))
+
+
+
+
+
+
+; Use defonce instead of def so that you can reload the code without clearing
+; the value of the atom.
+(defonce text-state (reagent/atom {:format :md
+                                   :value ""}))
+
+(defn ->md [{:keys [format value]}]
+  (case format
+    :md value
+    :html (html->md value)))
+
+(defn ->html [{:keys [format value]}]
+  (case format
+    :md (md->html value)
+    :html value))
+
+
+
+
 
 
 (defn copy-to-clipboard
@@ -67,35 +91,51 @@
    [:h1 "Markdownify"]
    [:div
     {:style {:display :flex}}
+
     [:div
      {:style {:flex "1"}}
      [:h2 "Markdown"]
      [:textarea
-      {:on-change #(reset! markdown (-> % .-target .-value))
-       :value @markdown
+      {:on-change (fn [e]
+                    (reset! text-state {:format :md
+                                        :value (-> e .-target .-value)}))
+       :value (->md @text-state)
        :style {:resize "none"
                :height "500px"
                :width "100%"}}]
      [:button
-      {:on-click #(copy-to-clipboard @markdown)
+      {:on-click #(copy-to-clipboard (->md @text-state))
        :style {:background-color :green
                :padding "1em"
                :color :white
                :border-radius 10}}
       "Copy markdown"]]
+
+    [:div
+     {:style {:flex "1"}}
+     [:h2 "HTML"]
+     [:textarea
+      {:on-change (fn [e]
+                    (reset! text-state {:format :html
+                                        :value (-> e .-target .-value)}))
+       :value (->html @text-state)
+       :style {:resize "none"
+               :height "500px"
+               :width "100%"}}]
+     [:button
+      {:on-click #(copy-to-clipboard (->html @text-state))
+       :style {:background-color :green
+               :padding "1em"
+               :color :white
+               :border-radius 10}}
+      "Copy HTML"]]
+
     [:div
      {:style {:flex "1"
               :padding-left "2em"}}
      [:h2 "HTML Preview"]
      [:div {:style {:height "500px"}
-            :dangerouslySetInnerHTML {:__html (md->html @markdown)}}]
-     [:button
-      {:on-click #(copy-to-clipboard (md->html @markdown))
-       :style {:background-color :green
-               :padding "1em"
-               :color :white
-               :border-radius 10}}
-      "Copy html"]]]])
+            :dangerouslySetInnerHTML {:__html (->html @text-state)}}]]]])
 
 
 
